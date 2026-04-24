@@ -1,0 +1,36 @@
+@using DTO.Quiz
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+
+<div class="player-leaderboard">
+    <div class="header">
+        <span class="title">SCOREBOARD</span>
+        <span class="sub">Target: @WinScore</span>
+    </div>
+
+    <div class="leaderboard">
+        @foreach (var p in Players.OrderByDescending(x => x.Score).Take(6))
+        {
+            <div class="item">
+                <span class="rank">@(Players.OrderByDescending(x => x.Score).ToList().IndexOf(p) + 1).</span>
+                <span class="name">
+                    <span class="player-name-text">@p.Name</span>
+                    <span class="answer-icon @(p.IsAnswerCorrect.HasValue ? (p.IsAnswerCorrect.Value ? "correct" : "wrong") : "hidden")"
+                          aria-hidden="@(p.IsAnswerCorrect.HasValue ? "false" : "true")">
+                        @(p.IsAnswerCorrect.HasValue ? (p.IsAnswerCorrect.Value ? (p.AnsweredFirst == true ? "★" : "✔") : "✖") : "")
+                    </span>
+                </span>
+
+                <span class="score">@p.Score</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<PlayerDto> Players { get; set; } = new();
+
+    [Parameter]
+    public int WinScore { get; set; }
+}

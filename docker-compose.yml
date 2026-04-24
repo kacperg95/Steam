@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: API/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - ApiOptions__SteamApiKey=${STEAM_API_KEY}
+    container_name: steam-api
+    networks:
+      - private-network
+      - npm-network
+    restart: always
+
+  quiz:
+    build:
+      context: .
+      dockerfile: Quiz/Dockerfile
+    container_name: steam-quiz
+    networks:
+      - npm-network
+    restart: always
+
+networks:
+  private-network:
+    external: true
+  npm-network:
+    external: true

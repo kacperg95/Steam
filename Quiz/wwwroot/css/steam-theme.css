@@ -1,0 +1,32 @@
+﻿:root {
+    --steam-dark: #171a21;
+    --steam-blue: #1b2838;
+    --steam-light-blue: #66c0f4;
+    --steam-accent: #4eaded;
+    --steam-text: #c7d5e0;
+    --steam-gray: #3d4450;
+    --steam-success: #a1c349;
+    --steam-error: #ac3d33;
+}
+
+body {
+    background-color: var(--steam-dark);
+    color: var(--steam-text);
+    font-family: "Motiva Sans", Arial, sans-serif;
+    margin: 0;
+}
+
+.btn-steam {
+    background-color: #1997ff;
+    border: none;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+}
+
+    .btn-steam:hover {
+        filter: brightness(1.1);
+    }

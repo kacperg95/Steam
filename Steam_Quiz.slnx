@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/WEB/">
+    <Project Path="Quiz/Quiz.csproj" Id="ac6e2ce0-6714-470b-9109-6214122a353b" />
+  </Folder>
+  <Project Path="API/API.csproj" Id="2297264c-1149-4c4b-86fd-be3ac2e7b6bb" />
+  <Project Path="BackgroundServices/BackgroundServices.csproj" Id="7fe7d572-e40b-46c4-955e-bbc1111456fc" />
+  <Project Path="DTO/DTO.csproj" Id="2433fe1d-8c43-4ab9-99ec-43bb7d884913" />
+  <Project Path="QuickTest/QuickTest.csproj" Id="43807954-6353-4f70-ac9a-e1c5bcbe2001" />
+  <Project Path="QuizEngine/QuizEngine.csproj" Id="43014ba5-6004-4f26-b787-4ab1d19056d1" />
+  <Project Path="Repository/Repository.csproj" Id="c9754ebc-b3b0-458f-8b83-e6e464d7304b" />
+  <Project Path="Services/Services.csproj" Id="0d43e904-9099-4652-a29e-ad4bda77e760" />
+  <Project Path="SteamApi/SteamApi.csproj" Id="4eee7698-02e4-4e51-9285-23db4773e294" />
+</Solution>

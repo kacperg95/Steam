@@ -1,0 +1,458 @@
+﻿@page "/quiz"
+@using DTO.Quiz
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Timers
+@using Quiz.Shared
+@using global::Quiz.Model
+@using System.Linq
+@inject GameSession Session
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="quiz-wrapper">
+    @if (room.State == RoomStateDto.Lobby)
+    {
+        <div class="lobby-card">
+            <div class="lobby-header">
+                <h2>ROOM: <span class="accent">@room.RoomCode</span></h2>
+
+                <div class="controls-group">
+                    <div class="control-dropdown" aria-expanded="@showDifficultyDropdown">
+                        <button class="control-toggle"
+                                @onclick="ToggleDifficultyDropdown"
+                                disabled="@( !IsHost )"
+                                aria-haspopup="true"
+                                aria-expanded="@showDifficultyDropdown">
+                            <span class="control-label">Difficulty:</span>
+                            <span class="accent">@room.Difficulty.ToString()</span>
+                            <span class="caret">▾</span>
+                        </button>
+
+                        @if (showDifficultyDropdown && IsHost)
+                        {
+                            <ul class="control-menu">
+                                @foreach (RoomDifficultyDto d in Enum.GetValues(typeof(RoomDifficultyDto)).Cast<RoomDifficultyDto>().Reverse())
+                                {
+                                    <li class="control-item @(d == room.Difficulty ? "selected" : "")" @onclick="() => ChangeDifficulty(d)">
+                                        @d.ToString()
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <div class="control-dropdown" aria-expanded="@showWinScoreDropdown">
+                        <button class="control-toggle"
+                                @onclick="ToggleWinScoreDropdown"
+                                disabled="@( !IsHost )"
+                                aria-haspopup="true"
+                                aria-expanded="@showWinScoreDropdown">
+                            <span class="control-label">Points:</span>
+                            <span class="accent">@room.WinScore</span>
+                            <span class="caret">▾</span>
+                        </button>
+
+                        @if (showWinScoreDropdown && IsHost)
+                        {
+                            <ul class="control-menu">
+                                @foreach (var s in winScoreOptions)
+                                {
+                                    <li class="control-item @(s == room.WinScore ? "selected" : "")" @onclick="() => ChangeWinScore(s)">
+                                        @s
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <h3>Players (@room.Players.Count)</h3>
+            <div class="player-grid">
+                @foreach (var p in room.Players)
+                {
+                    <div class="player-tag @(p.ConnectionId == hubConnection?.ConnectionId ? "is-me" : "")">
+                        @p.Name @(p.ConnectionId == room.Connectionid ? "👑" : "")
+                    </div>
+                }
+            </div>
+
+            @if (IsHost)
+            {
+                <button class="btn-steam" @onclick="StartGame">START GAME</button>
+            }
+            else
+            {
+                <div class="wait-status">Waiting for host...</div>
+            }
+        </div>
+    }
+    else if (room.State == RoomStateDto.InGame)
+    {
+        @if (room.CurrentQuestion == null)
+        {
+
+            <div class="next-pulse">Preparing next question...</div>
+        }
+        else
+        {
+            <div class="question-row">
+                <div class="question-view">
+                    <div class="question-header">
+                        <h3 class="question-text">@((MarkupString)(room.CurrentQuestion?.Content ?? string.Empty))</h3>
+
+                        <div class="timer-row">
+                            <div class="time-badge">
+                                @if (remainingSeconds > 0 && !revealAnswers)
+                                {
+                                    <span>@remainingSeconds s</span>
+                                }
+                            </div>
+
+                            <div class="progress-bar" title="Time remaining">
+                                <div class="progress-fill" style="@($"width:{GetProgressPercent()}%")"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(@room.CurrentQuestion?.MediaUrl))
+                    {
+                        <div class="media-frame">
+                            <img src="@room.CurrentQuestion?.MediaUrl" alt="Steam Content" />
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(@room.CurrentQuestion?.VideoUrl))
+                    {
+                        <div class="media-frame video-frame">
+                            <video @key="room.CurrentQuestion?.VideoUrl"
+                                   @ref="videoRef"
+                                   src="@room.CurrentQuestion?.VideoUrl"
+                                   autoplay
+                                   playsinline
+                                   muted
+                                   preload="auto"></video>
+                        </div>
+                    }
+
+                    <div class="answer-grid">
+                        @foreach (var answer in room.CurrentQuestion?.Answers ?? new())
+                        {
+                            <button class="@GetAnswerClass(answer)"
+                                    disabled="@(hasAnswered || revealAnswers)"
+                                    @onclick="() => SubmitAnswer(answer.Content)">
+                                @if (revealAnswers && !string.IsNullOrEmpty(answer.PostAnswerContent))
+                                {
+                                    <div class="answer-content">@((MarkupString)answer.PostAnswerContent)</div>
+                                }
+                                else
+                                {
+                                    <div class="answer-content">@answer.Content</div>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <PlayerLeaderboard Players="room.Players" WinScore="room.WinScore" />
+            </div>
+        }
+    }
+    else if (room.State == RoomStateDto.Finished)
+    {
+        <div class="end-screen">
+            <h1 class="winner-title">GAME FINISHED</h1>
+
+            <h3>Results</h3>
+            <div class="results-list">
+                @{ var winnerId = room.Players.OrderByDescending(p => p.Score).FirstOrDefault()?.ConnectionId; }
+                @foreach (var p in room.Players.OrderByDescending(p => p.Score))
+                {
+                    <div class="result-item @(p.ConnectionId == winnerId ? "winner" : "")">
+                        <span class="player-name">@p.Name @(p.ConnectionId == winnerId ? "👑" : "")</span>
+                        <span class="player-score">@p.Score</span>
+                    </div>
+                }
+            </div>
+
+            <button class="btn-steam" @onclick='() => BackToLobby()'>Back to lobby</button>
+        </div>
+    }
+</div>
+
+@code {
+    private HubConnection? hubConnection;
+    private RoomDto room = new();
+
+    private bool hasAnswered = false;
+    private bool revealAnswers = false;
+    private string? correctAnswer;
+    private string? selectedAnswer;
+
+    private Timer? answerQuestionTimer;
+    private Timer? nextQuestionTimer;
+
+    private Timer? countdownTimer;
+    private int remainingSeconds = 0;
+
+    private bool showDifficultyDropdown = false;
+    private bool showWinScoreDropdown = false;
+
+    private readonly int[] winScoreOptions = new[] { 5, 10, 20, 50, 100 };
+
+    private ElementReference videoRef;
+    private string? _lastPlayedVideoUrl;
+
+    private bool IsHost => hubConnection?.ConnectionId == room?.Connectionid;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var url = room.CurrentQuestion?.VideoUrl;
+        if (!string.IsNullOrEmpty(url) && url != _lastPlayedVideoUrl)
+        {
+            _lastPlayedVideoUrl = url;
+            await JS.InvokeVoidAsync("playVideo", videoRef);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Session.Nickname))
+            Nav.NavigateTo("/");
+
+        answerQuestionTimer = new Timer();
+        answerQuestionTimer.Elapsed += OnAnswerQuestionTimedEvent;
+        answerQuestionTimer.AutoReset = false;
+
+        nextQuestionTimer = new Timer();
+        nextQuestionTimer.Interval = 3000;
+        nextQuestionTimer.Elapsed += OnNextQuestionTimedEvent;
+        nextQuestionTimer.AutoReset = false;
+
+        countdownTimer = new Timer(1000);
+        countdownTimer.Elapsed += OnCountdownTimedEvent;
+        countdownTimer.AutoReset = true;
+
+        hubConnection = new HubConnectionBuilder()
+            // .WithUrl("https://localhost:7199/quizhub")
+            .WithUrl("https://steam-api.nonstack.dev/quizhub")
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<RoomDto>("RoomUpdated", (updatedRoom) =>
+        {
+            room = updatedRoom;
+            StateHasChanged();
+        });
+
+        hubConnection.On<PlayerDto>("PlayerJoined", (newPlayer) =>
+        {
+            room.Players.Add(newPlayer);
+            StateHasChanged();
+        });
+
+        hubConnection.On<PlayerDto>("PlayerLeft", (leftPlayer) =>
+        {
+            var playerToRemove = room.Players.FirstOrDefault(p => p.ConnectionId == leftPlayer.ConnectionId);
+            if (playerToRemove != null)
+            {
+                room.Players.Remove(playerToRemove);
+                StateHasChanged();
+            }
+        });
+
+        hubConnection.On<string>("GameStarted", (message) =>
+        {
+            room.State = RoomStateDto.InGame;
+            StateHasChanged();
+        });
+
+        hubConnection.On<RoomDto>("NewQuestion", (updatedRoom) =>
+        {
+            ArgumentNullException.ThrowIfNull(updatedRoom.CurrentQuestion);
+            room = updatedRoom;
+            hasAnswered = false;
+            revealAnswers = false;
+            selectedAnswer = null;
+            correctAnswer = null;
+
+            answerQuestionTimer.Interval = room.CurrentQuestion.TimeToAnswer * 1000;
+            answerQuestionTimer.Start();
+
+            remainingSeconds = room.CurrentQuestion.TimeToAnswer;
+            countdownTimer?.Start();
+
+            StateHasChanged();
+        });
+
+        hubConnection.On<List<PlayerDto>>("QuestionFinished", (updatedPlayers) =>
+        {
+            if (room != null)
+            {
+                room.Players = updatedPlayers;
+                correctAnswer = room.CurrentQuestion?.Answers.FirstOrDefault(a => a.IsValid)?.Content;
+                revealAnswers = true;
+            }
+
+            StopTimer(answerQuestionTimer);
+            StopTimer(countdownTimer);
+
+            nextQuestionTimer.Start();
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("GameFinished", (winner) =>
+        {
+            StopTimer(nextQuestionTimer);
+            room.State = RoomStateDto.Finished;
+            Session.Winner = winner;
+
+            StopTimer(countdownTimer);
+            StopTimer(answerQuestionTimer);
+
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+        if (Session.IsHost)
+            await hubConnection.SendAsync("CreateRoom", Session.Nickname);
+        else
+            await hubConnection.SendAsync("JoinRoom", Session.RoomCode, Session.Nickname);
+    }
+
+    private async Task StartGame() => await hubConnection!.SendAsync("StartGame", room?.RoomCode);
+    private async Task NextQuestion() => await hubConnection!.SendAsync("NextQuestion", room?.RoomCode);
+
+    private async Task SubmitAnswer(string content)
+    {
+        hasAnswered = true;
+        selectedAnswer = content;
+        await hubConnection!.SendAsync("SubmitAnswer", room?.RoomCode, content);
+    }
+
+    private async Task BackToLobby() => await hubConnection!.SendAsync("BackToLobby", room?.RoomCode);
+
+    private async void OnNextQuestionTimedEvent(object? source, ElapsedEventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            await NextQuestion();
+            StateHasChanged();
+        });
+    }
+
+    private async void OnAnswerQuestionTimedEvent(object? source, ElapsedEventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            await hubConnection!.SendAsync("FinishQuestion", room?.RoomCode);
+            StateHasChanged();
+        });
+    }
+
+    private async Task ChangeDifficulty(RoomDifficultyDto difficulty)
+    {
+        if (!IsHost || room == null || hubConnection == null) return;
+
+        room.Difficulty = difficulty;
+        showDifficultyDropdown = false;
+        await hubConnection.SendAsync("UpdateRoomSettings", room.RoomCode, difficulty.ToString(), room.WinScore);
+        StateHasChanged();
+    }
+
+    private void ToggleDifficultyDropdown()
+    {
+        if (!IsHost) return;
+        showDifficultyDropdown = !showDifficultyDropdown;
+        if (showDifficultyDropdown) showWinScoreDropdown = false;
+    }
+
+    private async Task ChangeWinScore(int score)
+    {
+        if (!IsHost || room == null || hubConnection == null) return;
+
+        room.WinScore = score;
+        showWinScoreDropdown = false;
+        await hubConnection.SendAsync("UpdateRoomSettings", room.RoomCode, room.Difficulty.ToString(), score);
+        StateHasChanged();
+    }
+
+    private void ToggleWinScoreDropdown()
+    {
+        if (!IsHost) return;
+        showWinScoreDropdown = !showWinScoreDropdown;
+        if (showWinScoreDropdown) showDifficultyDropdown = false;
+    }
+
+    private void OnCountdownTimedEvent(object? source, ElapsedEventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (remainingSeconds > 0)
+                remainingSeconds--;
+
+            if (remainingSeconds <= 0)
+                countdownTimer?.Stop();
+
+            StateHasChanged();
+        });
+    }
+
+    private Timer? StopTimer(Timer? timer)
+    {
+        if (timer != null && timer.Enabled)
+            timer.Stop();
+        return timer;
+    }
+
+    private string GetAnswerClass(QuestionAnswerDto answer)
+    {
+        var baseClass = "answer-btn";
+        if (!revealAnswers)
+        {
+            if (!string.IsNullOrEmpty(selectedAnswer) && answer.Content == selectedAnswer)
+                return baseClass + " selected";
+
+            return baseClass;
+        }
+
+        if (answer.IsValid)
+            return baseClass + " correct";
+
+        if (!string.IsNullOrEmpty(selectedAnswer) && answer.Content == selectedAnswer && !answer.IsValid)
+            return baseClass + " wrong";
+
+        return baseClass;
+    }
+
+    private int GetProgressPercent()
+    {
+        var total = room.CurrentQuestion?.TimeToAnswer ?? 0;
+        if (total <= 0) return 0;
+        var percent = (int)Math.Round((remainingSeconds - 1) * 100.0 / (total - 1));
+        return Math.Clamp(percent, 0, 100);
+    }
+
+    public void Dispose()
+    {
+        answerQuestionTimer?.Dispose();
+        nextQuestionTimer?.Dispose();
+        countdownTimer?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        countdownTimer?.Stop();
+        answerQuestionTimer?.Stop();
+        nextQuestionTimer?.Stop();
+
+        countdownTimer?.Dispose();
+        answerQuestionTimer?.Dispose();
+        nextQuestionTimer?.Dispose();
+
+        if (hubConnection != null)
+            await hubConnection.DisposeAsync();
+    }
+}

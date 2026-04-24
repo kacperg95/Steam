@@ -1,0 +1,39 @@
+name: Deploy to server
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "."
+          target: "~/apps/steam"
+
+      - name: Execute Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: STEAM_API_KEY,DB_CONNECTION_STRING
+          script: |
+            cd ~/apps/steam
+            printf 'STEAM_API_KEY=%s\n' "$STEAM_API_KEY" > .env
+            printf 'DB_CONNECTION_STRING=%s\n' "$DB_CONNECTION_STRING" >> .env
+            docker compose build --no-cache
+            docker compose up -d
+            docker image prune -f

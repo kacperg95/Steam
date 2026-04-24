@@ -1,0 +1,56 @@
+﻿.home-container {
+    max-width: 500px;
+    margin: 100px auto;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.home-title {
+    color: var(--steam-light-blue);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.home-subtitle {
+    color: var(--steam-text);
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+.input-group-custom {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.steam-input {
+    background: #2a3f5a;
+    border: 1px solid #000;
+    color: #fff;
+    padding: 12px;
+    border-radius: 3px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+    .steam-input:focus {
+        border-color: var(--steam-accent);
+        outline: none;
+    }
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.join-section {
+    display: flex;
+    gap: 5px;
+}

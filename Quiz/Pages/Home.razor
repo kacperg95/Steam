@@ -1,0 +1,47 @@
+﻿@page "/"
+@using global::Quiz.Model
+@inject NavigationManager Nav
+@inject GameSession Session
+
+<div class="home-container">
+    <h1 class="home-title">STEAM QUIZ</h1>
+    <p class="home-subtitle">Write your nickname to start</p>
+    
+    <div class="input-group-custom">
+        <input @bind="Session.Nickname"
+               class="steam-input"
+               placeholder="Your nickname" />
+        
+        <div class="actions-grid">
+            <button class="btn-steam" @onclick="CreateNewRoom">
+                Create Room
+            </button>
+            
+            <div class="join-section">
+                <input @bind="Session.RoomCode"
+                       class="steam-input"
+                       style="flex: 1; min-width: 0;"
+                       placeholder="Room code" />
+                <button class="btn-steam" @onclick="JoinExistingRoom">
+                    Join
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void CreateNewRoom()
+    {
+        if (string.IsNullOrWhiteSpace(Session.Nickname)) return;
+        Session.IsHost = true;
+        Nav.NavigateTo("/quiz");
+    }
+
+    private void JoinExistingRoom()
+    {
+        if (string.IsNullOrWhiteSpace(Session.Nickname) || string.IsNullOrWhiteSpace(Session.RoomCode)) return;
+        Session.IsHost = false;
+        Nav.NavigateTo("/quiz");
+    }
+}
