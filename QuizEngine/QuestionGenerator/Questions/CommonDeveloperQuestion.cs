@@ -6,7 +6,7 @@ namespace QuizEngine.QuestionGenerator.Questions
 {
     public class CommonDeveloperQuestion(AppDbContext dbContext) : QuestionGeneratorBase(dbContext)
     {
-        protected override int TimeToAnswer => 20;
+        protected override int TimeToAnswer => 30;
         public override int Weight => 2;
 
 

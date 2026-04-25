@@ -338,7 +338,8 @@
     {
         await InvokeAsync(async () =>
         {
-            await NextQuestion();
+            if (IsHost)
+                await NextQuestion();
             StateHasChanged();
         });
     }
@@ -347,7 +348,8 @@
     {
         await InvokeAsync(async () =>
         {
-            await hubConnection!.SendAsync("FinishQuestion", room?.RoomCode);
+            if (IsHost)
+                await hubConnection!.SendAsync("FinishQuestion", room?.RoomCode);
             StateHasChanged();
         });
     }

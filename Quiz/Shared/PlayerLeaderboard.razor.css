@@ -56,13 +56,20 @@
 
 .player-leaderboard .item .name {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 0;
     padding-right: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
+    overflow: hidden;
+}
+
+.player-leaderboard .item .name .player-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
 }
 
 .player-leaderboard .item .score {

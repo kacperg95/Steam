@@ -6,7 +6,7 @@ namespace QuizEngine.QuestionGenerator.Questions
 {
     public class WrongPublisherQuestion(AppDbContext dbContext) : OwnerRelationQuestionBase<Publisher>(dbContext)
     {
-        protected override int TimeToAnswer => 20;
+        protected override int TimeToAnswer => 30;
 
         public override Task<QuestionDto?> GenerateAsync(RoomDifficultyDto difficulty)
         {

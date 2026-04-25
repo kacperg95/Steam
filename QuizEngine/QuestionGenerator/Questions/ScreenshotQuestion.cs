@@ -6,7 +6,7 @@ namespace QuizEngine.QuestionGenerator.Questions
 {
     public class ScreenshotQuestion(AppDbContext dbContext) : QuestionGeneratorBase(dbContext)
     {
-        protected override int TimeToAnswer => 10;
+        protected override int TimeToAnswer => 15;
         public override int Weight => 10;
 
         public override async Task<QuestionDto?> GenerateAsync(RoomDifficultyDto difficulty)
