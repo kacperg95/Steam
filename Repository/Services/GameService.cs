@@ -41,6 +41,13 @@ namespace Repository.Services
         }
 
         public async Task<int> GetGameCount() => await _dbContext.Games.CountAsync();
+        
+        public async Task<bool> IsLastUpdateSuccessful(int gameId)
+        {
+            var game = await _dbContext.Games.AsNoTracking().FirstOrDefaultAsync(g => g.GameId == gameId);
+            return game?.LastUpdateSuccessful ?? false;
+        }
+
         public async Task MarkLastUpdateAsUnsuccessful(int gameId)
         {
             var game = await _dbContext.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
@@ -48,6 +55,14 @@ namespace Repository.Services
             game.LastUpdateSuccessful = false;
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task RemoveGame(int gameId)
+        {
+            var game = await _dbContext.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return;
+            _dbContext.Games.Remove(game);
+            await _dbContext.SaveChangesAsync();
+        }   
 
         public async Task AddOrUpdateGame(Game input)
         {

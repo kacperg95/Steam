@@ -51,6 +51,13 @@ namespace BackgroundServices
                                     var gameDto = await steamApiClient.GetGame(id);
                                     if (gameDto == null)
                                     {
+                                        if(!await gameService.IsLastUpdateSuccessful(id))
+                                        {
+                                            _logger.LogWarning("Game ID: {Id} not found in Steam API, last update was unsuccessful, removing game from DB", id);
+                                            await gameService.RemoveGame(id);
+                                            continue;
+                                        }
+
                                         await gameService.MarkLastUpdateAsUnsuccessful(id);
                                         _logger.LogWarning("Game ID: {Id} not found in Steam API", id);
                                         continue;
