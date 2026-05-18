@@ -124,13 +124,10 @@ namespace QuizEngine
                    players.Count(x => x.Score == highestScore) == 1;
         }
 
-        public PlayerDto FinalizeQuiz(string roomCode)
+        public void FinalizeQuiz(string roomCode)
         {
             var room = GetRoom(roomCode);
-            ArgumentNullException.ThrowIfNull(room.Players);   
-            PlayerDto winner = room.Players.First(x => x.Score == room.Players.Max(x => x.Score));
             room.State = RoomStateDto.Finished;
-            return winner;
         }
 
         public void BackToLobby(string roomCode)

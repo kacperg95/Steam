@@ -12,11 +12,15 @@ COPY ["SteamApi/SteamApi.csproj", "SteamApi/"]
 RUN dotnet restore "API/API.csproj"
 
 COPY . .
-
 RUN dotnet publish "API/API.csproj" -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+EXPOSE 8080
+
 COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "API.dll"]

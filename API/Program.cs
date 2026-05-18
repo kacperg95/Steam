@@ -36,22 +36,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 
-//builder.Services.AddCors(options => {
-//    //options.AddPolicy("SignalRPolicy", policy => {
-//    //    policy.WithOrigins("https://localhost:7257")
-//    //          .AllowAnyHeader()
-//    //          .AllowAnyMethod()
-//    //          .AllowCredentials();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SignalRPolicy", policy =>
+    {
+        //policy.WithOrigins("https://localhost:7257")
+        //      .AllowAnyHeader()
+        //      .AllowAnyMethod()
+        //      .AllowCredentials();
 
-//    //options.AddPolicy("SignalRPolicy", policy =>
-//    //{
-//    //    policy.WithOrigins("https://steam-quiz.nonstack.dev")
-//    //          .AllowAnyHeader()
-//    //          .AllowAnyMethod()
-//    //          .AllowCredentials();
-
-//    //});
-//});
+        policy.WithOrigins("https://steam-quiz.nonstack.dev")
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials();
+    });
+});
 
 var retryPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()

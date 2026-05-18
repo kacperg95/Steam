@@ -47,11 +47,21 @@ namespace API.Hubs
             await NextQuestion(roomCode);
         }
         public async Task NextQuestion(string roomCode)
-        {   
-            var room = await _roomManager.SetNewQuestion(roomCode);
+        {
             using var scope = BeginRoomScope(roomCode);
+            var room = _roomManager.GetRoom(roomCode);
+            
+            if (room.State == RoomStateDto.Finished)
+            {
+                var winner = room.Players.First(x => x.Score == room.Players.Max(x => x.Score));
+                _logger.LogInformation("Game finished for {RoomId}. Winner={Winner}", roomCode, winner.Name);
+                await Clients.Group(roomCode).SendAsync("GameFinished", winner.Name);
+                return;
+            }
+
+            var updatedRoom = await _roomManager.SetNewQuestion(roomCode);
             _logger.LogInformation("New question set for {RoomId}", roomCode);
-            await Clients.Group(roomCode).SendAsync("NewQuestion", room);
+            await Clients.Group(roomCode).SendAsync("NewQuestion", updatedRoom);
         }
 
         public async Task SubmitAnswer(string roomCode, string answerContent)
@@ -86,9 +96,8 @@ namespace API.Hubs
 
             if (maxScoreAchieved)
             {
-                var winner = _roomManager.FinalizeQuiz(roomCode);
-                _logger.LogInformation("Game finished for {RoomId}. Winner={Winner}", roomCode, winner.Name);
-                await Clients.Group(roomCode).SendAsync("GameFinished", winner.Name);
+                _roomManager.FinalizeQuiz(roomCode);
+                _logger.LogInformation("Max score achieved for {RoomId}. Waiting for next question timer before finalizing.", roomCode);
             }
         }
 

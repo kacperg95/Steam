@@ -176,7 +176,7 @@
                 }
             </div>
 
-            <button class="btn-steam" @onclick='() => BackToLobby()'>Back to lobby</button>
+            <button class="btn-steam" @onclick='() => BackToLobby()' disabled="@(!IsHost)">Back to lobby</button>
         </div>
     }
 </div>
@@ -226,7 +226,7 @@
         answerQuestionTimer.AutoReset = false;
 
         nextQuestionTimer = new Timer();
-        nextQuestionTimer.Interval = 3000;
+        nextQuestionTimer.Interval = 4000;
         nextQuestionTimer.Elapsed += OnNextQuestionTimedEvent;
         nextQuestionTimer.AutoReset = false;
 
@@ -236,7 +236,7 @@
 
         hubConnection = new HubConnectionBuilder()
             // .WithUrl("https://localhost:7199/quizhub")
-            .WithUrl("https://steam-api.nonstack.dev/quizhub")
+             .WithUrl("https://steam-api.nonstack.dev/quizhub")
             .WithAutomaticReconnect()
             .Build();
 
